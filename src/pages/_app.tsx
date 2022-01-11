@@ -1,7 +1,7 @@
 import { ChakraProvider, ColorModeProvider } from '@chakra-ui/react';
 import { Provider, createClient, dedupExchange, fetchExchange } from 'urql';
 import { cacheExchange, QueryInput, Cache } from "@urql/exchange-graphcache";
-import { LoginMutation, MeDocument, MeQuery, RegisterMutation } from '../generated/graphql'
+import { LogoutMutation, LoginMutation, MeDocument, MeQuery, RegisterMutation } from '../generated/graphql'
 import theme from '../theme'
 
 function betterUpdateQuery<Result, Query>(
@@ -10,10 +10,10 @@ function betterUpdateQuery<Result, Query>(
   result: any,
   fn: (r: Result, q: Query) => Query
 ) {
-  //comeback and figure out what is going on here
-  return cache.updateQuery(qi, data => fn(result, data as any) as any)
+  // Comeback and figure out what is going on hereon
+  // Where did $data come from ? and what the fuck is stored in there ?
+  return cache.updateQuery(qi, ((data) => fn(result, data as any) as any))
 }
-
 
 const client = createClient({
   url: "http://localhost:4000/graphql",
@@ -25,11 +25,13 @@ const client = createClient({
   exchanges: [dedupExchange, cacheExchange({
     updates: {
       Mutation: {
+
         /*
         1. Results: API Response
         2. Args:  Args passed into to call the API
         3. Cache: This is how you interact with local cache
         */
+
         login: (_result, args, cache, info) => {
           //this is as if it is a resolver here on its own
           betterUpdateQuery<LoginMutation, MeQuery>(
@@ -65,6 +67,17 @@ const client = createClient({
             }
           )
         },
+
+        //just figure out what this part is doing when you comeback 
+        logout: (_result, args, cache, info) => {
+          betterUpdateQuery<LogoutMutation, MeQuery>(
+            cache,
+            { query: MeDocument },
+            _result,
+            () => ({ me: null })
+          )
+        },
+
 
       }
     }
