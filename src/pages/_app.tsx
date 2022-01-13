@@ -1,103 +1,17 @@
 import { ChakraProvider, ColorModeProvider } from '@chakra-ui/react';
-import { Provider, createClient, dedupExchange, fetchExchange } from 'urql';
-import { cacheExchange, QueryInput, Cache } from "@urql/exchange-graphcache";
-import { LogoutMutation, LoginMutation, MeDocument, MeQuery, RegisterMutation } from '../generated/graphql'
 import theme from '../theme'
-
-function betterUpdateQuery<Result, Query>(
-  cache: Cache,
-  qi: QueryInput,
-  result: any,
-  fn: (r: Result, q: Query) => Query
-) {
-  // Comeback and figure out what is going on hereon
-  // Where did $data come from ? and what the fuck is stored in there ?
-  return cache.updateQuery(qi, ((data) => fn(result, data as any) as any))
-}
-
-const client = createClient({
-  url: "http://localhost:4000/graphql",
-  fetchOptions: {
-    credentials: "include",
-  },
-
-  //Why do we need to do this ?
-  exchanges: [dedupExchange, cacheExchange({
-    updates: {
-      Mutation: {
-
-        /*
-        1. Results: API Response
-        2. Args:  Args passed into to call the API
-        3. Cache: This is how you interact with local cache
-        */
-
-        login: (_result, args, cache, info) => {
-          //this is as if it is a resolver here on its own
-          betterUpdateQuery<LoginMutation, MeQuery>(
-            cache,
-            //MeDocument is fields that you want as your returns, which is also why its know as your query input
-            { query: MeDocument },
-            _result,
-            (result, query) => {
-              if (result.login.errors) {
-                return query
-              } else {
-                return {
-                  me: result.login.user,
-                }
-              }
-            }
-          )
-        },
-
-        register: (_result, args, cache, info) => {
-          betterUpdateQuery<RegisterMutation, MeQuery>(
-            cache,
-            { query: MeDocument },
-            _result,
-            (result, query) => {
-              if (result.register.errors) {
-                return query
-              } else {
-                return {
-                  me: result.register.user,
-                }
-              }
-            }
-          )
-        },
-
-        //just figure out what this part is doing when you comeback 
-        logout: (_result, args, cache, info) => {
-          betterUpdateQuery<LogoutMutation, MeQuery>(
-            cache,
-            { query: MeDocument },
-            _result,
-            () => ({ me: null })
-          )
-        },
-
-
-      }
-    }
-  }), fetchExchange]
-});
-
 
 function MyApp({ Component, pageProps }: any) {
   return (
-    <Provider value={client}>
-      <ChakraProvider resetCSS theme={theme}>
-        <ColorModeProvider
-          options={{
-            useSystemColorMode: true,
-          }}
-        >
-          <Component {...pageProps} />
-        </ColorModeProvider>
-      </ChakraProvider>
-    </Provider>
+    <ChakraProvider resetCSS theme={theme}>
+      <ColorModeProvider
+        options={{
+          useSystemColorMode: true,
+        }}
+      >
+        <Component {...pageProps} />
+      </ColorModeProvider>
+    </ChakraProvider>
   )
 }
 

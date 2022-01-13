@@ -2,6 +2,7 @@ import { Box, Button, Flex, Link } from '@chakra-ui/react';
 import NextLink from 'next/link'
 import React from 'react'
 import { useLogoutMutation, useMeQuery } from '../generated/graphql';
+import { isServer } from '../utils/isServer';
 
 interface NavBarProps {
 
@@ -10,9 +11,11 @@ interface NavBarProps {
 export const NavBar: React.FC<NavBarProps> = ({ }) => {
     //What the fuck is this logoutFecthing ? He just pulled this out of his ass ?
     const [{ fetching: logoutFetching }, logout] = useLogoutMutation()
-    const [{ data, fetching }] = useMeQuery()
-
+    const [{ data, fetching }] = useMeQuery({
+        pause: isServer(),
+    })
     let body = null
+
     // data is loading
     if (fetching) {
         // user net logged in
